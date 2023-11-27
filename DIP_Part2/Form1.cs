@@ -425,49 +425,5 @@ namespace DIP_Part1
             webcam.ShowWindow(pictureBox4);
             timer1.Start();
         }
-
-        private void FlipCopyBool()
-        {
-            if (copy)
-                copy = false;
-            else
-                copy = true;
-        }
-
-        private void FlipGreyscaleBool()
-        {
-            if(greyscale)
-                greyscale = false;
-            else
-                greyscale = true;
-        }
-
-        private void FlipInvertBool()
-        {
-            if(invert)
-                invert = false;
-            else
-                invert = true;
-        }
-
-        private void FlipHistogramBool()
-        {
-            if(histogram)
-                histogram = false;
-            else
-                histogram = true;
-        }
-
-        private void FlipSepiaBool()
-        {
-            if(sepia) sepia = false;
-            else sepia = true;
-        }
-
-        private void FlipSubtractBool()
-        {
-            if (imagesubtract) imagesubtract = false;
-            else imagesubtract = true;
-        }
     }
 }
