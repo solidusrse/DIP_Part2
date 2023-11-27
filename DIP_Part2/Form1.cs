@@ -26,8 +26,9 @@ namespace DIP_Part1
         private Device webcam;
         Bitmap bitmap, bmResult; //normal operations
         Bitmap imageA, imageB, colorgreen; //image subtraction
+        Bitmap videoLoaded, videoResult; //webcam
         Color pixel, pxResult, backpixel;
-        Boolean onCam = false;
+        Boolean copy, greyscale, invert, histogram, sepia, imagesubtract;
 
         private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
         {
@@ -60,8 +61,6 @@ namespace DIP_Part1
         //copy start
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!onCam)
-            {
                 for (int x = 0; x < bitmap.Width; x++)
                 {
                     for (int y = 0; y < bitmap.Height; y++)
@@ -71,9 +70,6 @@ namespace DIP_Part1
                     }
                 }
                 pictureBox2.Image = bmResult;
-            }
-            else
-                timer1.Enabled = true;
         }
 
         //copy end
@@ -222,9 +218,97 @@ namespace DIP_Part1
                 if(data != null && data.GetDataPresent(DataFormats.Bitmap))
                 {
                     bmap = (Image)data.GetData("System.Drawing.Bitmap", true);
-                    bitmap = new Bitmap(bmap);
-                    bmResult = new Bitmap(bitmap.Width, bitmap.Height);
-                    pictureBox1.Image = bitmap;
+                    videoLoaded = new Bitmap(bmap);
+                    videoResult = new Bitmap(videoLoaded.Width, videoLoaded.Height);
+                    pictureBox4.Image = videoLoaded;
+                }
+                if (copy)
+                {
+                    webcam.Sendmessage();
+                    for(int x=0; x<videoResult.Width; x++)
+                        for(int y=0; y<videoResult.Height; y++)
+                        {
+                            vidPixel = videoLoaded.GetPixel(x, y);
+                            videoResult.SetPixel(x, y, vidPixel);
+                        }
+                    pictureBox5.Image = videoResult;
+                }
+                if (greyscale)
+                {
+                    webcam.Sendmessage();
+                    int grey;
+                    for(int x=0; x<videoResult.Width; x++)
+                        for(int y=0; y < videoResult.Height; y++)
+                        {
+                            vidPixel = videoLoaded.GetPixel(x, y);
+                            grey = (vidPixel.R + vidPixel.G + vidPixel.B) / 3;
+                            videoResult.SetPixel(x, y, Color.FromArgb(grey, grey, grey));
+                        }
+                }
+                if (invert)
+                {
+                    webcam.Sendmessage();
+                    for (int x = 0; x < videoResult.Width; x++)
+                        for (int y = 0; y < videoResult.Height; y++)
+                        {
+                            vidPixel = videoLoaded.GetPixel(x, y);
+                            videoResult.SetPixel(x, y, Color.FromArgb(255-vidPixel.R, 255-vidPixel.G, 255-vidPixel.B));
+                        }
+                    pictureBox5.Image = videoResult;
+                }
+                if (sepia)
+                {
+                    webcam.Sendmessage();
+                    int r, g, b, newR, newG, newB;
+                    for (int x = 0; x < videoResult.Width; x++)
+                        for (int y = 0; y < videoResult.Height; y++)
+                        {
+                            vidPixel = videoLoaded.GetPixel(x, y);
+                            r = vidPixel.R;
+                            g = vidPixel.G;
+                            b = vidPixel.B;
+                            newR = Math.Min(((int)(.393 * r + .768 * g + .189 * b)), 255);
+                            newG = Math.Min(((int)(.349 * r + .686 * g + .168 * b)), 255);
+                            newB = Math.Min(((int)(.272 * r + .534 * g + .131 * b)), 255);
+                            videoResult.SetPixel(x, y, Color.FromArgb(newR, newG, newB));
+                        }
+                    pictureBox5.Image = videoResult;
+                }
+                if (histogram)
+                {
+                    webcam.Sendmessage();
+                    int avg;
+
+                    for (int x = 0; x < videoLoaded.Width; x++)
+                        for (int y = 0; y < videoLoaded.Height; y++)
+                        {
+                            vidPixel = videoLoaded.GetPixel(x, y);
+                            avg = (int)(vidPixel.R + vidPixel.G +  vidPixel.B)/3;
+                            videoResult.SetPixel(x, y, Color.FromArgb(avg, avg, avg));
+                        }
+
+                    Color histPix;
+                    int[] histogram = new int[256];
+                    for(int x = 0; x < videoResult.Width; x++)
+                        for(int y = 0; y < videoLoaded.Height; y++)
+                        {
+                            histPix = videoResult.GetPixel(x, y);
+                            histogram[histPix.R]++;
+                        }
+
+                    Bitmap data1 = new Bitmap(256, 379);
+                    for(int x = 0; x < 256; x++)
+                        for( int y = 0;y < 379; y++)
+                        {
+                            data1.SetPixel(x, y, Color.White);
+                        }
+
+                    for(int x = 0;x < 256; x++)
+                        for(int  y = 0;y < 379; y++)
+                        {
+                            data1.SetPixel(x, y, Color.Black);
+                        }
+                    pictureBox5.Image = data1;
                 }
             }
         }
@@ -232,12 +316,71 @@ namespace DIP_Part1
         private void offToolStripMenuItem_Click(object sender, EventArgs e)
         {
             webcam.Stop();
-            onCam = false;
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             openFileDialog3.ShowDialog();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            copy = true;
+            invert = false;
+            greyscale = false;
+            sepia = false;
+            imagesubtract = false;
+            histogram = false;
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            copy = false;
+            invert = false;
+            greyscale = true;
+            sepia = false;
+            imagesubtract = false;
+            histogram = false;
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            copy = false;
+            invert = true;
+            greyscale = false;
+            sepia = false;
+            imagesubtract = false;
+            histogram = false;
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            copy = false;
+            invert = false;
+            greyscale = false;
+            sepia = false;
+            imagesubtract = false;
+            histogram = true;
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            copy = false;
+            invert = false;
+            greyscale = false;
+            sepia = true;
+            imagesubtract = false;
+            histogram = false;
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            copy = false;
+            invert = false;
+            greyscale = false;
+            sepia = false;
+            imagesubtract = true;
+            histogram = false;
         }
 
         private void openFileDialog2_FileOk(object sender, CancelEventArgs e)
@@ -273,14 +416,58 @@ namespace DIP_Part1
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            copy = greyscale = invert = sepia = imagesubtract = histogram = false;
         }
 
         private void StartCam()
         {
             webcam = new Device();
-            webcam.ShowWindow(pictureBox1);
+            webcam.ShowWindow(pictureBox4);
             timer1.Start();
-            onCam = true;
+        }
+
+        private void FlipCopyBool()
+        {
+            if (copy)
+                copy = false;
+            else
+                copy = true;
+        }
+
+        private void FlipGreyscaleBool()
+        {
+            if(greyscale)
+                greyscale = false;
+            else
+                greyscale = true;
+        }
+
+        private void FlipInvertBool()
+        {
+            if(invert)
+                invert = false;
+            else
+                invert = true;
+        }
+
+        private void FlipHistogramBool()
+        {
+            if(histogram)
+                histogram = false;
+            else
+                histogram = true;
+        }
+
+        private void FlipSepiaBool()
+        {
+            if(sepia) sepia = false;
+            else sepia = true;
+        }
+
+        private void FlipSubtractBool()
+        {
+            if (imagesubtract) imagesubtract = false;
+            else imagesubtract = true;
         }
     }
 }
