@@ -7,6 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static WebCamLib.DeviceManager;
+using static WebCamLib.Device;
+using WebCamLib;
 
 namespace DIP_Part1
 {
@@ -15,11 +18,16 @@ namespace DIP_Part1
         public Form1()
         {
             InitializeComponent();
+            timer1.Interval = 1000;
+            timer1.Tick += timer1_Tick;
         }
 
-        Bitmap bitmap, bmResult=null; //normal operations
+
+        private Device webcam;
+        Bitmap bitmap, bmResult; //normal operations
         Bitmap imageA, imageB, colorgreen; //image subtraction
         Color pixel, pxResult, backpixel;
+        Boolean onCam = false;
 
         private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
         {
@@ -52,15 +60,20 @@ namespace DIP_Part1
         //copy start
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            for (int x = 0; x < bitmap.Width; x++)
+            if (!onCam)
             {
-                for (int y = 0; y < bitmap.Height; y++)
+                for (int x = 0; x < bitmap.Width; x++)
                 {
-                    pixel = (Color)bitmap.GetPixel(x, y);
-                    bmResult.SetPixel(x, y, pixel);
+                    for (int y = 0; y < bitmap.Height; y++)
+                    {
+                        pixel = (Color)bitmap.GetPixel(x, y);
+                        bmResult.SetPixel(x, y, pixel);
+                    }
                 }
+                pictureBox2.Image = bmResult;
             }
-            pictureBox2.Image = bmResult;
+            else
+                timer1.Enabled = true;
         }
 
         //copy end
@@ -164,20 +177,20 @@ namespace DIP_Part1
         }
 
         //subtraction start
-        private void button3_Click(object sender, EventArgs e)
+        private void subtract()
         {
             Color mygreen = Color.FromArgb(0, 0, 255);
-            int greygreen = (mygreen.R + mygreen.G + mygreen.B)/3;
+            int greygreen = (mygreen.R + mygreen.G + mygreen.B) / 3;
             int threshold = 5;
             Bitmap resultImage = new Bitmap(imageB.Width, imageB.Height);
 
-            for (int x=0; x < imageA.Width; x++)
+            for (int x = 0; x < imageA.Width; x++)
             {
-                for(int y=0; y < imageA.Height; y++)
+                for (int y = 0; y < imageA.Height; y++)
                 {
                     pixel = imageB.GetPixel(x, y);
-                    backpixel = imageA.GetPixel(x, y);   
-                    int grey = (pixel.R + pixel.G + pixel.B)/3;
+                    backpixel = imageA.GetPixel(x, y);
+                    int grey = (pixel.R + pixel.G + pixel.B) / 3;
                     int subtractvalue = Math.Abs(grey - greygreen);
                     if (subtractvalue > threshold)
                         resultImage.SetPixel(x, y, pixel);
@@ -187,7 +200,40 @@ namespace DIP_Part1
             }
             pictureBox3.Image = resultImage;
         }
+        private void button3_Click(object sender, EventArgs e)
+        {
+            subtract();
+        }
         //subtraction end
+
+        private void onToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            timer1.Enabled = true;
+            StartCam();
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            Color vidPixel;
+            Image bmap;
+            if(webcam != null)
+            {
+                IDataObject data = Clipboard.GetDataObject();
+                if(data != null && data.GetDataPresent(DataFormats.Bitmap))
+                {
+                    bmap = (Image)data.GetData("System.Drawing.Bitmap", true);
+                    bitmap = new Bitmap(bmap);
+                    bmResult = new Bitmap(bitmap.Width, bitmap.Height);
+                    pictureBox1.Image = bitmap;
+                }
+            }
+        }
+
+        private void offToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            webcam.Stop();
+            onCam = false;
+        }
 
         private void button2_Click(object sender, EventArgs e)
         {
@@ -221,14 +267,20 @@ namespace DIP_Part1
                     bmResult.SetPixel(x, y, pxResult);
                 }
             }
-
             pictureBox2.Image = bmResult;
         }
         //sepia end
 
         private void Form1_Load(object sender, EventArgs e)
         {
+        }
 
+        private void StartCam()
+        {
+            webcam = new Device();
+            webcam.ShowWindow(pictureBox1);
+            timer1.Start();
+            onCam = true;
         }
     }
 }
